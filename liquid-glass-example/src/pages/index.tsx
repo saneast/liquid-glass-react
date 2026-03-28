@@ -1,447 +1,455 @@
 import { Geist } from "next/font/google"
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import LiquidGlass from "liquid-glass-react"
-import { LogOutIcon, Github } from "lucide-react"
+import { 
+  Send, 
+  Sparkles, 
+  MessageCircle, 
+  TrendingUp, 
+  BookOpen, 
+  Zap,
+  BarChart3,
+  Bot,
+  User,
+  ChevronRight,
+  Lightbulb,
+  FileText,
+  Code
+} from "lucide-react"
+import Link from "next/link"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 })
 
+interface Message {
+  id: string
+  role: "user" | "assistant"
+  content: string
+  timestamp: Date
+}
+
+interface RecommendedItem {
+  id: string
+  title: string
+  description: string
+  icon: React.ReactNode
+  category: string
+}
+
+const recommendedItems: RecommendedItem[] = [
+  {
+    id: "1",
+    title: "开始使用 AI 助手",
+    description: "了解如何与智能助手高效对话",
+    icon: <Sparkles className="w-5 h-5" />,
+    category: "入门指南"
+  },
+  {
+    id: "2", 
+    title: "代码生成与优化",
+    description: "让 AI 帮你编写和优化代码",
+    icon: <Code className="w-5 h-5" />,
+    category: "开发工具"
+  },
+  {
+    id: "3",
+    title: "文档智能分析",
+    description: "上传文档获取智能摘要和分析",
+    icon: <FileText className="w-5 h-5" />,
+    category: "效率工具"
+  },
+  {
+    id: "4",
+    title: "创意灵感生成",
+    description: "获取创意写作和头脑风暴支持",
+    icon: <Lightbulb className="w-5 h-5" />,
+    category: "创作辅助"
+  }
+]
+
 export default function Home() {
-  // User Info Card Controls
-  const [displacementScale, setDisplacementScale] = useState(100)
-  const [blurAmount, setBlurAmount] = useState(0.5)
-  const [saturation, setSaturation] = useState(140)
-  const [aberrationIntensity, setAberrationIntensity] = useState(2)
-  const [elasticity, setElasticity] = useState(0)
-  const [cornerRadius, setCornerRadius] = useState(32)
-  const [userInfoOverLight, setUserInfoOverLight] = useState(false)
-  const [userInfoMode, setUserInfoMode] = useState<"standard" | "polar" | "prominent" | "shader">("standard")
-
-  // Log Out Button Controls
-  const [logoutDisplacementScale, setLogoutDisplacementScale] = useState(64)
-  const [logoutBlurAmount, setLogoutBlurAmount] = useState(0.1)
-  const [logoutSaturation, setLogoutSaturation] = useState(130)
-  const [logoutAberrationIntensity, setLogoutAberrationIntensity] = useState(2)
-  const [logoutElasticity, setLogoutElasticity] = useState(0.35)
-  const [logoutCornerRadius, setLogoutCornerRadius] = useState(100)
-  const [logoutOverLight, setLogoutOverLight] = useState(false)
-  const [logoutMode, setLogoutMode] = useState<"standard" | "polar" | "prominent" | "shader">("standard")
-
-  // Shared state
-  const [activeTab, setActiveTab] = useState<"userInfo" | "logOut">("userInfo")
+  const [messages, setMessages] = useState<Message[]>([])
+  const [inputValue, setInputValue] = useState("")
+  const [isTyping, setIsTyping] = useState(false)
+  const [showAnswer, setShowAnswer] = useState(false)
+  const [currentAnswer, setCurrentAnswer] = useState<string>("")
+  const messagesEndRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const [globalMousePos, setGlobalMousePos] = useState({ x: 0, y: 0 })
 
-  const [scroll, setScroll] = useState(0)
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setGlobalMousePos({ x: e.clientX, y: e.clientY })
+    }
+    window.addEventListener("mousemove", handleMouseMove)
+    return () => window.removeEventListener("mousemove", handleMouseMove)
+  }, [])
 
-  const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
-    requestAnimationFrame(() => {
-      setScroll((event?.target as any)?.scrollTop)
-    })
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
-  const scrollingOverBrightSection = scroll > 230 && scroll < 500
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  const handleSendMessage = async () => {
+    if (!inputValue.trim()) return
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: "user",
+      content: inputValue,
+      timestamp: new Date()
+    }
+
+    setMessages(prev => [...prev, userMessage])
+    setInputValue("")
+    setIsTyping(true)
+
+    // Simulate AI response
+    setTimeout(() => {
+      const responses = [
+        "这是一个很好的问题！让我为您详细解答。根据我的分析，这个问题涉及多个方面...",
+        "感谢您的提问。基于我的理解，我可以从以下几个角度来回答您的问题...",
+        "我理解您的需求。这是一个常见但重要的话题，让我为您提供一些深入的见解...",
+        "非常感谢您的咨询。针对您提出的问题，我建议从以下几个方面考虑..."
+      ]
+      
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant", 
+        content: responses[Math.floor(Math.random() * responses.length)],
+        timestamp: new Date()
+      }
+      
+      setMessages(prev => [...prev, aiMessage])
+      setIsTyping(false)
+      setShowAnswer(true)
+      setCurrentAnswer(aiMessage.content)
+    }, 1500)
+  }
+
+  const handleQuickQuestion = (question: string) => {
+    setInputValue(question)
+  }
 
   return (
-    <div
-      className={`${geistSans.className} grid grid-cols-1 grid-rows-2 md:grid-rows-1 md:grid-cols-3 shadow-2xl w-full max-w-5xl mx-auto md:my-10 h-screen md:max-h-[calc(100vh-5rem)] md:rounded-3xl overflow-hidden font-[family-name:var(--font-geist-sans)]`}
-    >
-      {/* Left Panel - Glass Effect Demo */}
-      <div className="flex-1 relative overflow-auto min-h-screen md:col-span-2" ref={containerRef} onScroll={handleScroll}>
-        <div className="w-full min-h-[200vh] absolute top-0 left-0 pb-96 mb-96">
-          <img src="https://picsum.photos/2000/2000" className="w-full h-96 object-cover" />
-          <div className="flex flex-col gap-2" id="bright-section">
-            <h2 className="text-2xl font-semibold my-5 text-center">Some Heading</h2>
-            <p className="px-10">
-              Bacon ipsum dolor amet hamburger Bacon ipsum dolor amet hamburger <br />
-              Bacon ipsum dolor amet hamburger Bacon ipsum dolor amet hamburger
-              <br />
-              Bacon ipsum dolor amet hamburger Bacon ipsum dolor amet hamburger
-              <br />
-              Bacon ipsum dolor amet hamburger Bacon ipsum dolor amet hamburger
-              <br />
-              Bacon ipsum dolor amet hamburger Bacon ipsum dolor amet hamburger
-              <br />
-              Bacon ipsum dolor amet hamburger Bacon ipsum dolor amet hamburger
-            </p>
-          </div>
-          <img src="https://picsum.photos/1200/1200" className="w-full h-80 object-cover my-10" />
-          <img src="https://picsum.photos/1400/1300" className="w-full h-72 object-cover my-10" />
-          <img src="https://picsum.photos/1100/1200" className="w-full h-96 object-cover my-10 mb-96" />
-        </div>
+    <div className={`${geistSans.className} min-h-screen bg-background`} ref={containerRef}>
+      {/* Background gradient */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl" />
+      </div>
 
-        {activeTab === "userInfo" && (
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 z-50 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           <LiquidGlass
-              displacementScale={displacementScale}
-              blurAmount={blurAmount}
-              saturation={saturation}
-              aberrationIntensity={aberrationIntensity}
-              elasticity={elasticity}
-              cornerRadius={cornerRadius}
+            displacementScale={60}
+            blurAmount={0.3}
+            saturation={140}
+            aberrationIntensity={1}
+            elasticity={0.2}
+            cornerRadius={16}
+            padding="12px 20px"
+            mouseContainer={containerRef}
+          >
+            <div className="flex items-center gap-3">
+              <Bot className="w-6 h-6 text-accent" />
+              <span className="font-semibold text-lg">智能问答助手</span>
+            </div>
+          </LiquidGlass>
+
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard">
+              <LiquidGlass
+                displacementScale={50}
+                blurAmount={0.2}
+                saturation={140}
+                aberrationIntensity={1}
+                elasticity={0.25}
+                cornerRadius={12}
+                padding="10px 16px"
+                mouseContainer={containerRef}
+                onClick={() => {}}
+              >
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4" />
+                  <span className="text-sm">监控面板</span>
+                </div>
+              </LiquidGlass>
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="pt-24 pb-8 px-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-6 h-[calc(100vh-8rem)]">
+          
+          {/* Left Panel - Chat Window */}
+          <div className="lg:col-span-2 flex flex-col h-full">
+            <LiquidGlass
+              displacementScale={80}
+              blurAmount={0.4}
+              saturation={130}
+              aberrationIntensity={2}
+              elasticity={0.1}
+              cornerRadius={24}
+              padding="0"
               mouseContainer={containerRef}
-              overLight={scrollingOverBrightSection || userInfoOverLight}
-              mode={userInfoMode}
-              style={{
-                position: "fixed",
-                top: "25%",
-                left: "40%",
-              }}
+              style={{ height: "100%" }}
             >
-              <div className="w-72 text-shadow-lg">
-                <h3 className="text-xl font-semibold mb-4">User Info</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-black/10 backdrop-blur rounded-full flex items-center justify-center text-white font-semibold">JD</div>
-                    <div>
-                      <p className="font-medium">John Doe</p>
-                      <p className="text-sm text-white">Software Engineer</p>
-                    </div>
+              <div className="flex flex-col h-full w-full min-w-[320px]">
+                {/* Chat Header */}
+                <div className="px-6 py-4 border-b border-white/10">
+                  <div className="flex items-center gap-3">
+                    <MessageCircle className="w-5 h-5 text-accent" />
+                    <h2 className="font-medium">对话窗口</h2>
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      {messages.length} 条消息
+                    </span>
                   </div>
-                  <div className="pt-2 space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-white">Email:</span>
-                      <span className="text-sm">john.doe@example.com</span>
+                </div>
+
+                {/* Messages Area */}
+                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+                  {messages.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-center">
+                      <Sparkles className="w-12 h-12 text-accent/50 mb-4" />
+                      <p className="text-muted-foreground text-sm">
+                        开始对话，探索 AI 的无限可能
+                      </p>
+                      <div className="mt-6 space-y-2 w-full max-w-xs">
+                        {["如何使用这个助手？", "帮我写一段代码", "解释一个概念"].map((q, i) => (
+                          <button
+                            key={i}
+                            onClick={() => handleQuickQuestion(q)}
+                            className="w-full text-left px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition-colors"
+                          >
+                            {q}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-white">Location:</span>
-                      <span className="text-sm">San Francisco, CA</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-white">Joined:</span>
-                      <span className="text-sm">March 2023</span>
-                    </div>
+                  ) : (
+                    <>
+                      {messages.map((message) => (
+                        <div
+                          key={message.id}
+                          className={`flex gap-3 ${message.role === "user" ? "justify-end" : ""}`}
+                        >
+                          {message.role === "assistant" && (
+                            <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
+                              <Bot className="w-4 h-4 text-accent" />
+                            </div>
+                          )}
+                          <div
+                            className={`max-w-[80%] px-4 py-3 rounded-2xl ${
+                              message.role === "user"
+                                ? "bg-accent text-accent-foreground"
+                                : "bg-white/10"
+                            }`}
+                          >
+                            <p className="text-sm leading-relaxed">{message.content}</p>
+                          </div>
+                          {message.role === "user" && (
+                            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                              <User className="w-4 h-4" />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {isTyping && (
+                        <div className="flex gap-3">
+                          <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
+                            <Bot className="w-4 h-4 text-accent" />
+                          </div>
+                          <div className="px-4 py-3 rounded-2xl bg-white/10">
+                            <div className="flex gap-1">
+                              <span className="w-2 h-2 bg-white/60 rounded-full typing-dot" />
+                              <span className="w-2 h-2 bg-white/60 rounded-full typing-dot" />
+                              <span className="w-2 h-2 bg-white/60 rounded-full typing-dot" />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      <div ref={messagesEndRef} />
+                    </>
+                  )}
+                </div>
+
+                {/* Input Area */}
+                <div className="px-4 py-4 border-t border-white/10">
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                      placeholder="输入您的问题..."
+                      className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent/50 transition-colors"
+                    />
+                    <button
+                      onClick={handleSendMessage}
+                      disabled={!inputValue.trim() || isTyping}
+                      className="px-4 py-3 bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors"
+                    >
+                      <Send className="w-5 h-5" />
+                    </button>
                   </div>
                 </div>
               </div>
             </LiquidGlass>
-        )}
-
-        {activeTab === "logOut" && (
-          <LiquidGlass
-            displacementScale={logoutDisplacementScale}
-            blurAmount={logoutBlurAmount}
-            saturation={logoutSaturation}
-            aberrationIntensity={logoutAberrationIntensity}
-            elasticity={logoutElasticity}
-            cornerRadius={logoutCornerRadius}
-            mouseContainer={containerRef}
-            overLight={scrollingOverBrightSection || logoutOverLight}
-            mode={logoutMode}
-            padding="8px 16px"
-            onClick={() => {
-              console.log("Logged out")
-            }}
-            style={{
-              position: "fixed",
-              top: "20%",
-              left: "40%",
-            }}
-          >
-            <h3 className="text-lg font-medium flex items-center gap-2">
-              Log Out
-              <LogOutIcon className="w-5 h-5" />
-            </h3>
-          </LiquidGlass>
-        )}
-      </div>
-
-      {/* Right Panel - Control Panel */}
-      <div className="row-start-2 rounded-t-3xl md:rounded-none md:col-start-3 bg-gray-900/80 h-full overflow-y-auto backdrop-blur-md border-l border-white/10 p-8 flex flex-col">
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-white">Glassy Boi but Web</h2>
-            <a href="https://github.com/rdev/liquid-glass-react" target="_blank" rel="noopener noreferrer" className="text-white/70 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg" title="View on GitHub">
-              <Github className="w-6 h-6" />
-            </a>
           </div>
-          <p className="text-white/60 text-sm">Liquid Glass container effect for React. With settings and effects and stuff.</p>
 
-          <p className="font-semibold text-yellow-300 text-xs mt-2 leading-snug">⚠️ This doesn't fully work in Safari and Firefox. You will not see edge refraction on non-chromium browsers.</p>
+          {/* Right Panel - Homepage Display & Answer Display */}
+          <div className="lg:col-span-3 flex flex-col gap-6 h-full overflow-hidden">
+            
+            {/* Homepage Display - Recommended Content */}
+            <div className={`transition-all duration-500 ${showAnswer ? "h-1/3" : "h-full"}`}>
+              <LiquidGlass
+                displacementScale={70}
+                blurAmount={0.35}
+                saturation={135}
+                aberrationIntensity={1.5}
+                elasticity={0.12}
+                cornerRadius={24}
+                padding="0"
+                mouseContainer={containerRef}
+                style={{ height: "100%" }}
+              >
+                <div className="h-full w-full overflow-y-auto">
+                  <div className="px-6 py-4 border-b border-white/10 sticky top-0 bg-black/20 backdrop-blur-sm">
+                    <div className="flex items-center gap-3">
+                      <TrendingUp className="w-5 h-5 text-success" />
+                      <h2 className="font-medium">推荐内容</h2>
+                    </div>
+                  </div>
+                  
+                  <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {recommendedItems.map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => handleQuickQuestion(item.title)}
+                          className="text-left p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/15 transition-all group"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center text-accent flex-shrink-0">
+                              {item.icon}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-xs text-muted-foreground">{item.category}</span>
+                              <h3 className="font-medium text-sm mt-1 group-hover:text-accent transition-colors">
+                                {item.title}
+                              </h3>
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                {item.description}
+                              </p>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors flex-shrink-0" />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Quick Stats */}
+                    <div className="mt-6 grid grid-cols-3 gap-4">
+                      <div className="text-center p-4 rounded-xl bg-white/5">
+                        <Zap className="w-5 h-5 mx-auto text-warning mb-2" />
+                        <p className="text-xl font-semibold">1.2s</p>
+                        <p className="text-xs text-muted-foreground">平均响应</p>
+                      </div>
+                      <div className="text-center p-4 rounded-xl bg-white/5">
+                        <MessageCircle className="w-5 h-5 mx-auto text-accent mb-2" />
+                        <p className="text-xl font-semibold">10K+</p>
+                        <p className="text-xs text-muted-foreground">今日对话</p>
+                      </div>
+                      <div className="text-center p-4 rounded-xl bg-white/5">
+                        <BookOpen className="w-5 h-5 mx-auto text-success mb-2" />
+                        <p className="text-xl font-semibold">98%</p>
+                        <p className="text-xs text-muted-foreground">满意度</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </LiquidGlass>
+            </div>
+
+            {/* Answer Display - Shows when there's an answer */}
+            {showAnswer && (
+              <div className="h-2/3 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <LiquidGlass
+                  displacementScale={75}
+                  blurAmount={0.4}
+                  saturation={140}
+                  aberrationIntensity={2}
+                  elasticity={0.1}
+                  cornerRadius={24}
+                  padding="0"
+                  mouseContainer={containerRef}
+                  style={{ height: "100%" }}
+                >
+                  <div className="h-full w-full overflow-y-auto">
+                    <div className="px-6 py-4 border-b border-white/10 sticky top-0 bg-black/20 backdrop-blur-sm">
+                      <div className="flex items-center gap-3">
+                        <Sparkles className="w-5 h-5 text-accent" />
+                        <h2 className="font-medium">AI 回答详情</h2>
+                        <button 
+                          onClick={() => setShowAnswer(false)}
+                          className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          收起
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="p-6">
+                      <div className="prose prose-invert prose-sm max-w-none">
+                        <p className="leading-relaxed text-foreground">{currentAnswer}</p>
+                        
+                        {/* Enhanced Answer UI Components */}
+                        <div className="mt-6 p-4 rounded-xl bg-accent/10 border border-accent/20">
+                          <h4 className="font-medium text-accent mb-2 flex items-center gap-2">
+                            <Lightbulb className="w-4 h-4" />
+                            相关建议
+                          </h4>
+                          <ul className="space-y-2 text-sm text-muted-foreground">
+                            <li className="flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 bg-accent rounded-full" />
+                              您可以尝试追问更具体的细节
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 bg-accent rounded-full" />
+                              提供更多上下文可以获得更精准的回答
+                            </li>
+                          </ul>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="mt-6 flex gap-3">
+                          <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition-colors">
+                            <Code className="w-4 h-4" />
+                            复制回答
+                          </button>
+                          <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition-colors">
+                            <FileText className="w-4 h-4" />
+                            导出文档
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </LiquidGlass>
+              </div>
+            )}
+          </div>
         </div>
-
-        {/* Tab Switcher */}
-        <div className="flex mb-6 bg-white/5 rounded-lg p-1">
-          <button
-            onClick={() => setActiveTab("userInfo")}
-            className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all ${activeTab === "userInfo" ? "bg-blue-500 text-white shadow-lg" : "text-white/70 hover:text-white hover:bg-white/10"}`}
-          >
-            User Info Card
-          </button>
-          <button
-            onClick={() => setActiveTab("logOut")}
-            className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all ${activeTab === "logOut" ? "bg-blue-500 text-white shadow-lg" : "text-white/70 hover:text-white hover:bg-white/10"}`}
-          >
-            Log Out Button
-          </button>
-        </div>
-
-        <div className="space-y-8 flex-1">
-          {activeTab === "userInfo" && (
-            <>
-              <div>
-                <span className="block text-sm font-semibold text-white/90 mb-3">Refraction Mode</span>
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="radio"
-                      id="userInfoModeStandard"
-                      name="userInfoMode"
-                      value="standard"
-                      checked={userInfoMode === "standard"}
-                      onChange={(e) => setUserInfoMode(e.target.value as "standard" | "polar" | "prominent" | "shader")}
-                      className="w-4 h-4 accent-blue-500"
-                    />
-                    <label htmlFor="userInfoModeStandard" className="text-sm text-white/90">
-                      Standard
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="radio"
-                      id="userInfoModePolar"
-                      name="userInfoMode"
-                      value="polar"
-                      checked={userInfoMode === "polar"}
-                      onChange={(e) => setUserInfoMode(e.target.value as "standard" | "polar" | "prominent" | "shader")}
-                      className="w-4 h-4 accent-blue-500"
-                    />
-                    <label htmlFor="userInfoModePolar" className="text-sm text-white/90">
-                      Polar
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="radio"
-                      id="userInfoModeProminent"
-                      name="userInfoMode"
-                      value="prominent"
-                      checked={userInfoMode === "prominent"}
-                      onChange={(e) => setUserInfoMode(e.target.value as "standard" | "polar" | "prominent" | "shader")}
-                      className="w-4 h-4 accent-blue-500"
-                    />
-                    <label htmlFor="userInfoModeProminent" className="text-sm text-white/90">
-                      Prominent
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="radio"
-                      id="userInfoModeShader"
-                      name="userInfoMode"
-                      value="shader"
-                      checked={userInfoMode === "shader"}
-                      onChange={(e) => setUserInfoMode(e.target.value as "standard" | "polar" | "prominent" | "shader")}
-                      className="w-4 h-4 accent-blue-500"
-                    />
-                    <label htmlFor="userInfoModeShader" className="text-sm text-white/90">
-                      Shader (Experimental)
-                    </label>
-                  </div>
-                </div>
-                <p className="text-xs text-white/50 mt-2">Controls the refraction calculation method</p>
-              </div>
-
-              <div>
-                <span className="block text-sm font-semibold text-white/90 mb-3">Displacement Scale</span>
-                <div className="mb-2">
-                  <span className="text-xl font-mono text-blue-300">{displacementScale}</span>
-                </div>
-                <input type="range" min="0" max="200" step="1" value={displacementScale} onChange={(e) => setDisplacementScale(Number(e.target.value))} className="w-full" />
-                <p className="text-xs text-white/50 mt-2">Controls the intensity of edge distortion</p>
-              </div>
-
-              <div>
-                <span className="block text-sm font-semibold text-white/90 mb-3">Blur Amount</span>
-                <div className="mb-2">
-                  <span className="text-xl font-mono text-green-300">{blurAmount.toFixed(1)}</span>
-                </div>
-                <input type="range" min="0" max="1" step="0.01" value={blurAmount} onChange={(e) => setBlurAmount(Number(e.target.value))} className="w-full" />
-                <p className="text-xs text-white/50 mt-2">Controls backdrop blur intensity</p>
-              </div>
-
-              <div>
-                <span className="block text-sm font-semibold text-white/90 mb-3">Saturation</span>
-                <div className="mb-2">
-                  <span className="text-xl font-mono text-purple-300">{saturation}%</span>
-                </div>
-                <input type="range" min="100" max="300" step="10" value={saturation} onChange={(e) => setSaturation(Number(e.target.value))} className="w-full" />
-                <p className="text-xs text-white/50 mt-2">Controls color saturation of the backdrop</p>
-              </div>
-
-              <div>
-                <span className="block text-sm font-semibold text-white/90 mb-3">Chromatic Aberration</span>
-                <div className="mb-2">
-                  <span className="text-xl font-mono text-cyan-300">{aberrationIntensity}</span>
-                </div>
-                <input type="range" min="0" max="20" step="1" value={aberrationIntensity} onChange={(e) => setAberrationIntensity(Number(e.target.value))} className="w-full" />
-                <p className="text-xs text-white/50 mt-2">Controls RGB channel separation intensity</p>
-              </div>
-
-              <div>
-                <span className="block text-sm font-semibold text-white/90 mb-3">Elasticity</span>
-                <div className="mb-2">
-                  <span className="text-xl font-mono text-orange-300">{elasticity.toFixed(2)}</span>
-                </div>
-                <input type="range" min="0" max="1" step="0.05" value={elasticity} onChange={(e) => setElasticity(Number(e.target.value))} className="w-full" />
-                <p className="text-xs text-white/50 mt-2">Controls how much the glass reaches toward the cursor</p>
-              </div>
-
-              <div>
-                <span className="block text-sm font-semibold text-white/90 mb-3">Corner Radius</span>
-                <div className="mb-2">
-                  <span className="text-xl font-mono text-pink-300">{cornerRadius === 999 ? "Full" : `${cornerRadius}px`}</span>
-                </div>
-                <input type="range" min="0" max="100" step="1" value={cornerRadius} onChange={(e) => setCornerRadius(Number(e.target.value))} className="w-full" />
-                <p className="text-xs text-white/50 mt-2">Controls the roundness of the glass corners</p>
-              </div>
-
-              <div>
-                <span className="block text-sm font-semibold text-white/90 mb-3">Over Light</span>
-                <div className="flex items-center space-x-3">
-                  <input type="checkbox" id="userInfoOverLight" checked={userInfoOverLight} onChange={(e) => setUserInfoOverLight(e.target.checked)} className="w-5 h-5 accent-blue-500" />
-                  <label htmlFor="userInfoOverLight" className="text-sm text-white/90">
-                    Tint liquid glass dark (use for bright backgrounds)
-                  </label>
-                </div>
-                <p className="text-xs text-white/50 mt-2">Makes the glass darker for better visibility on light backgrounds</p>
-              </div>
-            </>
-          )}
-
-          {activeTab === "logOut" && (
-            <>
-              <div>
-                <span className="block text-sm font-semibold text-white/90 mb-3">Refraction Mode</span>
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="radio"
-                      id="logoutModeStandard"
-                      name="logoutMode"
-                      value="standard"
-                      checked={logoutMode === "standard"}
-                      onChange={(e) => setLogoutMode(e.target.value as "standard" | "polar" | "prominent" | "shader")}
-                      className="w-4 h-4 accent-blue-500"
-                    />
-                    <label htmlFor="logoutModeStandard" className="text-sm text-white/90">
-                      Standard
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="radio"
-                      id="logoutModePolar"
-                      name="logoutMode"
-                      value="polar"
-                      checked={logoutMode === "polar"}
-                      onChange={(e) => setLogoutMode(e.target.value as "standard" | "polar" | "prominent" | "shader")}
-                      className="w-4 h-4 accent-blue-500"
-                    />
-                    <label htmlFor="logoutModePolar" className="text-sm text-white/90">
-                      Polar
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="radio"
-                      id="logoutModeProminent"
-                      name="logoutMode"
-                      value="prominent"
-                      checked={logoutMode === "prominent"}
-                      onChange={(e) => setLogoutMode(e.target.value as "standard" | "polar" | "prominent" | "shader")}
-                      className="w-4 h-4 accent-blue-500"
-                    />
-                    <label htmlFor="logoutModeProminent" className="text-sm text-white/90">
-                      Prominent
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="radio"
-                      id="logoutModeShader"
-                      name="logoutMode"
-                      value="shader"
-                      checked={logoutMode === "shader"}
-                      onChange={(e) => setLogoutMode(e.target.value as "standard" | "polar" | "prominent" | "shader")}
-                      className="w-4 h-4 accent-blue-500"
-                    />
-                    <label htmlFor="logoutModeShader" className="text-sm text-white/90">
-                      Shader
-                    </label>
-                  </div>
-                </div>
-                <p className="text-xs text-white/50 mt-2">Controls the refraction calculation method</p>
-              </div>
-
-              <div>
-                <span className="block text-sm font-semibold text-white/90 mb-3">Displacement Scale</span>
-                <div className="mb-2">
-                  <span className="text-xl font-mono text-blue-300">{logoutDisplacementScale}</span>
-                </div>
-                <input type="range" min="0" max="200" step="1" value={logoutDisplacementScale} onChange={(e) => setLogoutDisplacementScale(Number(e.target.value))} className="w-full" />
-                <p className="text-xs text-white/50 mt-2">Controls the intensity of edge distortion</p>
-              </div>
-
-              <div>
-                <span className="block text-sm font-semibold text-white/90 mb-3">Blur Amount</span>
-                <div className="mb-2">
-                  <span className="text-xl font-mono text-green-300">{logoutBlurAmount.toFixed(1)}</span>
-                </div>
-                <input type="range" min="0" max="1" step="0.01" value={logoutBlurAmount} onChange={(e) => setLogoutBlurAmount(Number(e.target.value))} className="w-full" />
-                <p className="text-xs text-white/50 mt-2">Controls backdrop blur intensity</p>
-              </div>
-
-              <div>
-                <span className="block text-sm font-semibold text-white/90 mb-3">Saturation</span>
-                <div className="mb-2">
-                  <span className="text-xl font-mono text-purple-300">{logoutSaturation}%</span>
-                </div>
-                <input type="range" min="100" max="300" step="10" value={logoutSaturation} onChange={(e) => setLogoutSaturation(Number(e.target.value))} className="w-full" />
-                <p className="text-xs text-white/50 mt-2">Controls color saturation of the backdrop</p>
-              </div>
-
-              <div>
-                <span className="block text-sm font-semibold text-white/90 mb-3">Chromatic Aberration</span>
-                <div className="mb-2">
-                  <span className="text-xl font-mono text-cyan-300">{logoutAberrationIntensity}</span>
-                </div>
-                <input type="range" min="0" max="20" step="1" value={logoutAberrationIntensity} onChange={(e) => setLogoutAberrationIntensity(Number(e.target.value))} className="w-full" />
-                <p className="text-xs text-white/50 mt-2">Controls RGB channel separation intensity</p>
-              </div>
-
-              <div>
-                <span className="block text-sm font-semibold text-white/90 mb-3">Elasticity</span>
-                <div className="mb-2">
-                  <span className="text-xl font-mono text-orange-300">{logoutElasticity.toFixed(2)}</span>
-                </div>
-                <input type="range" min="0" max="1" step="0.05" value={logoutElasticity} onChange={(e) => setLogoutElasticity(Number(e.target.value))} className="w-full" />
-                <p className="text-xs text-white/50 mt-2">Controls how much the glass reaches toward the cursor</p>
-              </div>
-
-              <div>
-                <span className="block text-sm font-semibold text-white/90 mb-3">Corner Radius</span>
-                <div className="mb-2">
-                  <span className="text-xl font-mono text-pink-300">{logoutCornerRadius === 999 ? "Full" : `${logoutCornerRadius}px`}</span>
-                </div>
-                <input type="range" min="0" max="100" step="1" value={logoutCornerRadius} onChange={(e) => setLogoutCornerRadius(Number(e.target.value))} className="w-full" />
-                <p className="text-xs text-white/50 mt-2">Controls the roundness of the glass corners</p>
-              </div>
-
-              <div>
-                <span className="block text-sm font-semibold text-white/90 mb-3">Over Light</span>
-                <div className="flex items-center space-x-3">
-                  <input type="checkbox" id="logoutOverLight" checked={logoutOverLight} onChange={(e) => setLogoutOverLight(e.target.checked)} className="w-5 h-5 accent-blue-500" />
-                  <label htmlFor="logoutOverLight" className="text-sm text-white/90">
-                    Tint liquid glass dark (use for bright backgrounds)
-                  </label>
-                </div>
-                <p className="text-xs text-white/50 mt-2">Makes the glass darker for better visibility on light backgrounds</p>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+      </main>
     </div>
   )
 }
